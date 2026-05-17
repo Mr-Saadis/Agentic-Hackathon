@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
 
 interface Message {
   id: string;
@@ -118,8 +120,13 @@ export default function HomeScreen() {
       <View style={styles.container}>
         {/* Top Header Bar */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>ServeIQ</Text>
-          <Text style={styles.headerSubtitle}>Assalam-o-Alaikum, Aapko kya madad chahiye?</Text>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={styles.headerTitle}>ServeIQ</Text>
+            <Text style={styles.headerSubtitle}>Assalam-o-Alaikum, Aapko kya madad chahiye?</Text>
+          </View>
+          <TouchableOpacity onPress={async () => await supabase.auth.signOut()} style={{ position: 'absolute', right: 20, top: 20 }}>
+            <Ionicons name="log-out-outline" size={24} color="#6B7280" />
+          </TouchableOpacity>
         </View>
 
         {/* Chat Scroll View */}

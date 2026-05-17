@@ -121,7 +121,7 @@
 * [cite_start]Profile consists of: name, preferred language (Urdu / English / Auto-detect), default location, and payment method preference[cite: 50, 296].
 * [cite_start]Consent screen: Explicit PDPA-compliant data collection consent with a checkbox[cite: 51, 297]. [cite_start]Non-consent blocks registration[cite: 51, 297].
 
-### [cite_start]FR-U-02: Multilingual Voice & Text Input [cite: 52, 298]
+### [COMPLETED - PHASE 3.1] [cite_start]FR-U-02: Multilingual Voice & Text Input [cite: 52, 298]
 * Voice input: User taps microphone; [cite_start]`expo-av` records in M4A format, which is uploaded to the Whisper API for transcription[cite: 53, 299].
 * [cite_start]Text input: Raw text accepted in Urdu, Roman Urdu, English, or mixed code-switched language[cite: 54, 300].
 * [cite_start]Language detection: Whisper returns detected language; if confidence < 0.80, system defaults to Urdu prompts[cite: 55, 301].
@@ -189,7 +189,7 @@
 * [cite_start]Decay: Boost deactivates automatically after the 5th rated completion[cite: 105, 351]. [cite_start]Status is managed via `providers.newbie_boost_remaining` (integer 5 ➔ 0)[cite: 105, 351].
 * [cite_start]Boost is explicitly **NOT** applied to Complex jobs to protect platform quality boundaries[cite: 106, 352].
 
-### [cite_start]FR-T-03: Availability Engine (3-Tier) [cite: 107, 353]
+### [COMPLETED - PHASE 2.2] [cite_start]FR-T-03: Availability Engine (3-Tier) [cite: 107, 353]
 * [cite_start]**OFFLINE (Manual):** Technician manually sets status to Offline[cite: 108, 354]. [cite_start]Stops all job dispatches and displays clearly in red on the dashboard[cite: 108, 354].
 * [cite_start]**AVAILABLE (Default):** Active in the system and eligible for dispatch[cite: 109, 355]. [cite_start]Set automatically on app open and immediately following job completion[cite: 109, 355].
 * [cite_start]**BUSY / ON-JOB (Auto-Triggered):** Set automatically when the technician accepts a job via database transaction[cite: 110, 356]. [cite_start]Reverts to `Available` when the job is marked `Completed` AND the invoice is acknowledged[cite: 111, 357].
@@ -201,7 +201,7 @@
 * [cite_start]On parallel dispatch acceptance: The accepting provider's status is locked instantly via database transaction[cite: 116, 362]. [cite_start]The other provider's alert is removed from their job inbox with a push notification: *"This urgent job was claimed by another provider."*[cite: 117, 363].
 * [cite_start]On timeout (no acceptance): Antigravity auto-escalates to Rank 2 (sequential) or Rank 3 (urgent), notifying the user of the minor routing delay[cite: 118, 364].
 
-### [cite_start]FR-T-05: Job Alert & Reasoning Transparency [cite: 119, 365]
+### [COMPLETED - PHASE 2.2] [cite_start]FR-T-05: Job Alert & Reasoning Transparency [cite: 119, 365]
 * [cite_start]Job alert notification contains: Service type, location (area only — exact address hidden until accepted), estimated payout, urgency indicator, and accept/decline buttons[cite: 120, 366].
 * [cite_start]Below the alert: Displays a one-line Antigravity reasoning trace — e.g., *"Dispatched to you: 3.2km, 4.8-star AC Inverter specialist, within user budget."*[cite: 121, 367].
 * [cite_start]Accept button starts a 3-minute countdown timer (urgent) or 10-minute timer (scheduled)[cite: 122, 368].
@@ -237,7 +237,7 @@
 ### [cite_start]8.1 Agent Workflow Inventory [cite: 142, 388]
 | Workflow | Description | Trace Required |
 | :--- | :--- | :--- |
-| **intent_extraction** | Parse multilingual input ➔ structured JSON | [cite_start]Yes — confidence score + field mapping [cite: 143, 389] |
+| **intent_extraction** [COMPLETED - PHASE 3.1] | Parse multilingual input ➔ structured JSON | [cite_start]Yes — confidence score + field mapping [cite: 143, 389] |
 | **provider_matching** | Score providers using 6-factor algorithm | [cite_start]Yes — per-provider score breakdown [cite: 143, 389] |
 | **dynamic_pricing** | Generate itemized quote per provider | [cite_start]Yes — each price component logged [cite: 143, 389] |
 | **scheduling_check** | Validate availability, prevent conflicts | [cite_start]Yes — conflict reason if any [cite: 143, 389] |

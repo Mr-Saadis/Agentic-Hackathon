@@ -42,3 +42,4 @@ ios/DerivedData/
 
 # Testing
 coverage/
+node_modules
