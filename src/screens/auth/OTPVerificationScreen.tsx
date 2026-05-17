@@ -12,13 +12,14 @@ import {
   Keyboard,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../../lib/supabase';
 import type { AuthStackNavigationProp, AuthStackRouteProp } from '../../navigation/types';
 
 export default function OTPVerificationScreen() {
   const navigation = useNavigation<AuthStackNavigationProp<'OTPVerification'>>();
-  const route = useRoute<AuthStackRouteProp<'OTPVerification'>>();
-  const { phone } = route.params;
+  const route = useRoute<any>();
+  const { phone, role } = route.params;
 
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [timer, setTimer] = useState<number>(60);
@@ -54,7 +55,10 @@ export default function OTPVerificationScreen() {
     setErrorMessage('');
 
     try {
-      // 1. Verify OTP with Supabase Auth
+      // 1. Save Role to SecureStore FIRST so App.tsx reads it correctly
+      await SecureStore.setItemAsync('user_role', role || 'customer');
+
+      // 2. Verify OTP with Supabase Auth
       const { data, error } = await supabase.auth.verifyOtp({
         phone: phone,
         token: token,
@@ -65,22 +69,7 @@ export default function OTPVerificationScreen() {
         throw error;
       }
 
-      // 2. Intelligent Routing: Check if user profile already exists
-      if (data.session?.user) {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', data.session.user.id)
-          .single();
-
-        if (userData && userData.id) {
-          // Record EXISTS: Bypass onboarding
-          navigation.navigate('HomeShell');
-        } else {
-          // Record DOES NOT EXIST: Proceed to Language Selection
-          navigation.navigate('LanguageSelection');
-        }
-      }
+      // Once verified, Supabase session updates and triggers App.tsx to switch stacks automatically.
     } catch (error: any) {
       console.error('OTP Verification Error:', error);
       setErrorMessage('Galat code — dobara try karein / Invalid code — try again');

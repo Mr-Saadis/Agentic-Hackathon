@@ -11,7 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import type { AuthStackNavigationProp } from '../../navigation/types';
 
@@ -21,7 +21,8 @@ export default function PhoneInputScreen() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const navigation = useNavigation<AuthStackNavigationProp<'PhoneInput'>>();
-
+  const route = useRoute<any>();
+  const role = route.params?.role || 'customer';
   const handlePhoneChange = (text: string) => {
     // Clear any previous error message when the user types
     setErrorMessage('');
@@ -72,8 +73,8 @@ export default function PhoneInputScreen() {
         throw error;
       }
 
-      // Automatically navigate to OTP verification, passing the phone as a parameter
-      navigation.navigate('OTPVerification', { phone: formattedE164Phone });
+      // Automatically navigate to OTP verification, passing the phone and role as parameters
+      navigation.navigate('OTPVerification', { phone: formattedE164Phone, role });
     } catch (error: any) {
       let message = 'An network or unexpected error occurred. Please try again.';
       if (error.message) {
