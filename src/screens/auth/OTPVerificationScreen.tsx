@@ -69,6 +69,16 @@ export default function OTPVerificationScreen() {
         throw error;
       }
 
+      // 3. Database Insertion for Customers
+      if (data.session?.user && role !== 'technician') {
+        // Ensure user record exists in 'users' table
+        await supabase.from('users').upsert({
+          id: data.session.user.id,
+          phone: data.session.user.phone,
+          pdpa_consent: true, // Assuming consent given in previous screen
+        }, { onConflict: 'id' });
+      }
+
       // Once verified, Supabase session updates and triggers App.tsx to switch stacks automatically.
     } catch (error: any) {
       console.error('OTP Verification Error:', error);

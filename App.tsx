@@ -16,6 +16,9 @@ import ConsentScreen from './src/screens/auth/ConsentScreen';
 // Main Screens
 import HomeScreen from './src/screens/main/HomeScreen';
 import ProviderDashboardScreen from './src/screens/provider/ProviderDashboardScreen';
+import CNICUploadScreen from './src/screens/provider/CNICUploadScreen';
+import TechnicianProfileScreen from './src/screens/provider/TechnicianProfileScreen';
+import TechnicianVettingScreen from './src/screens/provider/TechnicianVettingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -86,7 +89,12 @@ export default function App() {
           // --- MAIN APP STACK ---
           <>
             {userRole === 'technician' ? (
-              <Stack.Screen name="ProviderDashboard" component={ProviderDashboardScreen} />
+              <>
+                <Stack.Screen name="CNICUpload" component={CNICUploadScreen} />
+                <Stack.Screen name="TechnicianProfile" component={TechnicianProfileScreen} />
+                <Stack.Screen name="TechnicianVetting" component={TechnicianVettingScreen} />
+                <Stack.Screen name="ProviderDashboard" component={ProviderDashboardScreen} />
+              </>
             ) : (
               <Stack.Screen name="HomeShell" component={HomeScreen} />
             )}
