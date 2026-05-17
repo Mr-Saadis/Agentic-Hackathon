@@ -32,7 +32,7 @@ export default function HomeScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<Message>>(null);
 
   const sendMessage = (text: string) => {
     if (!text.trim()) return;
