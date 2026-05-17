@@ -1,2 +1,44 @@
-node_modules
+# Expo / React Native
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
+.DS_Store
+
+# dotenv
 .env
+.env.local
+.env.*.local
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+*.apk
+*.aab
+
+# iOS
+ios/build/
+ios/Pods/
+ios/.symlinks/
+ios/DerivedData/
+*.ipa
+
+# IDEs / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+coverage/
