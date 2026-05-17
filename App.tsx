@@ -9,6 +9,7 @@ import LanguageSelectionScreen from './src/screens/auth/LanguageSelectionScreen'
 import ConsentScreen from './src/screens/auth/ConsentScreen';
 import HomeScreen from './src/screens/main/HomeScreen';
 
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
