@@ -14,7 +14,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="PhoneInput" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator id="RootStack" initialRouteName="PhoneInput" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
         <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
         <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />

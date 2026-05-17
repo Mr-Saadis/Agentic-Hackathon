@@ -185,7 +185,7 @@ export default function OTPVerificationScreen() {
                   digit ? styles.otpInputFilled : null,
                   errorMessage ? styles.otpInputError : null,
                 ]}
-                ref={(ref) => (inputRefs.current[index] = ref)}
+                ref={(ref) => { inputRefs.current[index] = ref; }}
                 value={digit}
                 onChangeText={(text) => handleOtpChange(text, index)}
                 onKeyPress={(e) => handleKeyPress(e, index)}
