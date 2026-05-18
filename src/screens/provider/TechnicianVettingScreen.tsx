@@ -87,18 +87,54 @@ Instructions:
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: getSystemInstruction(lang) }] },
           contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+            responseMimeType: 'application/json',
+          }
         })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message || 'API Error');
 
-      const textResponse = data.candidates[0].content.parts[0].text.trim();
+      // Extract text from all non-thought parts (Gemini 2.5 Flash has thinking mode)
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      let textResponse = '';
+      for (const part of parts) {
+        // Skip thought parts from Gemini thinking mode
+        if (part.thought) continue;
+        if (part.text) {
+          textResponse += part.text;
+        }
+      }
+      textResponse = textResponse.trim();
+
+      // Robust JSON extraction
       let parsed: any;
       try {
-        parsed = JSON.parse(textResponse.replace(/```json/g, '').replace(/```/g, '').trim());
-      } catch (e) {
-        parsed = { question: textResponse, type: 'text', options: [] };
+        // First try direct parse
+        parsed = JSON.parse(textResponse);
+      } catch (e1) {
+        try {
+          // Try removing markdown code blocks
+          const cleaned = textResponse
+            .replace(/```json\s*/gi, '')
+            .replace(/```\s*/g, '')
+            .trim();
+          parsed = JSON.parse(cleaned);
+        } catch (e2) {
+          // Try extracting JSON object with regex
+          const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              parsed = JSON.parse(jsonMatch[0]);
+            } catch (e3) {
+              parsed = { question: textResponse, type: 'text', options: [] };
+            }
+          } else {
+            parsed = { question: textResponse, type: 'text', options: [] };
+          }
+        }
       }
 
       if (parsed.status === 'complete' || parsed.competence_score !== undefined) {
