@@ -8,27 +8,28 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Alert,
+  DeviceEventEmitter,
+  Platform,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import type { AuthStackNavigationProp } from '../../navigation/types';
 
 export default function ConsentScreen() {
   const navigation = useNavigation<AuthStackNavigationProp<'Consent'>>();
   const route = useRoute<any>();
-  
-  // Extract the language passed from the previous screen, default to auto if missing
   const preferredLanguage = route.params?.preferredLanguage || 'auto';
 
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Detect when user has scrolled to the bottom of the container
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 20;
-    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 20) {
       setHasScrolledToBottom(true);
     }
   };
@@ -36,38 +37,25 @@ export default function ConsentScreen() {
   const handleConfirm = async () => {
     if (!isChecked) return;
     setIsLoading(true);
-
     try {
-      // 1. Retrieve the active authenticated session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        throw new Error('Authentication session not found. Please log in again.');
-      }
+      if (sessionError || !session?.user) throw new Error('Session not found. Please log in again.');
 
-      // 2. Insert the onboarding record into public.users
-      // Note: phone is NOT NULL in the schema, so we extract it from session.user
-      const { error: insertError } = await supabase.from('users').insert({
+      const { error: insertError } = await supabase.from('users').upsert({
         id: session.user.id,
         phone: session.user.phone,
         preferred_language: preferredLanguage,
         pdpa_consent: true,
         pdpa_consent_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'id' });
+      if (insertError) throw insertError;
 
-      if (insertError) {
-        throw insertError;
-      }
-
-      // 3. Navigate directly to the main application shell
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeShell' }],
-      });
-      
+      await supabase.auth.updateUser({ data: { preferred_language: preferredLanguage } });
+      await SecureStore.setItemAsync('has_consented', 'true');
+      DeviceEventEmitter.emit('consent_granted');
     } catch (error: any) {
-      console.error('Consent Record Insert Error:', error);
-      Alert.alert('Database Error', error.message || 'Failed to save consent. Please try again.');
+      console.error('Consent Error:', error);
+      Alert.alert('Error', error.message || 'Failed to save. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -75,27 +63,31 @@ export default function ConsentScreen() {
 
   const handleDecline = async () => {
     setIsLoading(true);
-    // 1. Clear the active Supabase auth session
     await supabase.auth.signOut();
     setIsLoading(false);
-    
-    // 2. Safely return the user to the PhoneInput screen, clearing stack history
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'PhoneInput' }],
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'PhoneInput' }] });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
+        {/* Header */}
         <View style={styles.header}>
+          <LinearGradient
+            colors={['#6366F1', '#8B5CF6']}
+            style={styles.iconBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="shield-checkmark" size={24} color="#FFF" />
+          </LinearGradient>
           <Text style={styles.title}>Terms & Privacy</Text>
           <Text style={styles.subtitle}>
-            Please review the Data Collection Policy (PDPA 2023)
+            Review our Data Collection Policy (PDPA 2023)
           </Text>
         </View>
 
+        {/* Scrollable Policy */}
         <View style={styles.scrollWrapper}>
           <ScrollView
             style={styles.scrollView}
@@ -104,51 +96,44 @@ export default function ConsentScreen() {
             showsVerticalScrollIndicator={true}
           >
             <Text style={styles.policyText}>
-              <Text style={styles.policyBold}>Mock Privacy Policy (PDPA 2023 Compliant)</Text>
+              <Text style={styles.policyBold}>Privacy Policy (PDPA 2023 Compliant)</Text>
               {'\n\n'}
               1. Information Collection: We collect your phone number, location data, and interaction history to provide reliable service orchestration.
               {'\n\n'}
-              2. Data Usage: Your information is used strictly to match you with service providers and resolve disputes via Google Antigravity.
+              2. Data Usage: Your information is used strictly to match you with service providers and resolve disputes.
               {'\n\n'}
-              3. Data Retention: Real-time location vectors are permanently purged 7 days post-booking completion. General identifiable information is anonymized upon account deletion.
+              3. Data Retention: Location vectors are purged 7 days post-booking. Identifiable information is anonymized upon deletion.
               {'\n\n'}
-              4. Third-Party Sharing: Your data is never sold. It is only shared securely with assigned service providers strictly for the duration of the active job.
+              4. Third-Party Sharing: Your data is never sold. It is shared only with assigned providers for the active job.
               {'\n\n'}
-              5. Dispute Resolution: Call logs and interaction traces are maintained temporarily to ensure a fair resolution process.
+              5. Dispute Resolution: Call logs are maintained temporarily for fair resolution.
               {'\n\n'}
-              <Text style={styles.policyInstruction}>[Scroll to bottom to agree to these terms...]</Text>
+              <Text style={styles.policyInstruction}>[Scroll to bottom to agree...]</Text>
               {'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'}
-              --- End of Policy Document ---
+              — End of Policy Document —
             </Text>
           </ScrollView>
         </View>
 
+        {/* Checkbox */}
         <TouchableOpacity
           style={styles.checkboxContainer}
-          onPress={() => {
-            if (hasScrolledToBottom) setIsChecked(!isChecked);
-          }}
+          onPress={() => { if (hasScrolledToBottom) setIsChecked(!isChecked); }}
           activeOpacity={hasScrolledToBottom ? 0.7 : 1}
         >
-          <View
-            style={[
-              styles.checkbox,
-              !hasScrolledToBottom ? styles.checkboxDisabled : null,
-              isChecked ? styles.checkboxChecked : null,
-            ]}
-          >
-            {isChecked && <Text style={styles.checkmark}>✓</Text>}
+          <View style={[
+            styles.checkbox,
+            !hasScrolledToBottom && styles.checkboxDisabled,
+            isChecked && styles.checkboxChecked,
+          ]}>
+            {isChecked && <Ionicons name="checkmark" size={16} color="#FFF" />}
           </View>
-          <Text
-            style={[
-              styles.checkboxLabel,
-              !hasScrolledToBottom ? styles.textDisabled : null,
-            ]}
-          >
+          <Text style={[styles.checkboxLabel, !hasScrolledToBottom && styles.textDisabled]}>
             Main ServeIQ ki data collection policy se mutafiq hoon
           </Text>
         </TouchableOpacity>
 
+        {/* Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.declineButton}
@@ -160,13 +145,10 @@ export default function ConsentScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.confirmButton,
-              (!isChecked || isLoading) ? styles.confirmButtonDisabled : null,
-            ]}
+            style={[styles.confirmButton, (!isChecked || isLoading) && styles.confirmButtonDisabled]}
             onPress={handleConfirm}
             disabled={!isChecked || isLoading}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -188,126 +170,132 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     padding: 24,
+    paddingTop: Platform.OS === 'android' ? 44 : 16,
   },
   header: {
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  iconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '500',
   },
   scrollWrapper: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    marginBottom: 24,
+    borderColor: '#E2E8F0',
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    marginBottom: 20,
     overflow: 'hidden',
   },
   scrollView: {
-    padding: 16,
+    padding: 18,
   },
   policyText: {
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 24,
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 22,
   },
   policyBold: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#111827',
+    fontWeight: '800',
+    fontSize: 15,
+    color: '#0F172A',
   },
   policyInstruction: {
     fontStyle: 'italic',
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
     paddingRight: 24,
   },
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     borderWidth: 2,
-    borderColor: '#9CA3AF',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxDisabled: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
   checkboxChecked: {
-    borderColor: '#2563EB',
-    backgroundColor: '#2563EB',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 14,
+    borderColor: '#6366F1',
+    backgroundColor: '#6366F1',
   },
   checkboxLabel: {
     fontSize: 14,
-    color: '#111827',
+    color: '#0F172A',
     flex: 1,
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   textDisabled: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 14,
   },
   declineButton: {
     flex: 1,
     height: 56,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   declineText: {
-    color: '#4B5563',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#475569',
+    fontSize: 15,
+    fontWeight: '700',
   },
   confirmButton: {
     flex: 2,
     height: 56,
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
+    backgroundColor: '#6366F1',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 5,
   },
   confirmButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: '#CBD5E1',
     shadowOpacity: 0,
     elevation: 0,
   },
   confirmText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

@@ -5,8 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { AuthStackNavigationProp } from '../../navigation/types';
 
 type LanguageType = 'ur' | 'en' | 'auto';
@@ -15,12 +18,15 @@ interface LanguageOption {
   id: LanguageType;
   title: string;
   subtitle: string;
+  icon: string;
+  bg: string;
+  accent: string;
 }
 
 const LANGUAGES: LanguageOption[] = [
-  { id: 'ur', title: 'اردو', subtitle: 'Urdu' },
-  { id: 'en', title: 'English', subtitle: 'English' },
-  { id: 'auto', title: 'Auto-Detect', subtitle: 'Detect from input' },
+  { id: 'ur', title: 'اردو', subtitle: 'Urdu', icon: 'language', bg: '#FEF3C7', accent: '#F59E0B' },
+  { id: 'en', title: 'English', subtitle: 'English', icon: 'globe', bg: '#EEF2FF', accent: '#6366F1' },
+  { id: 'auto', title: 'Auto-Detect', subtitle: 'We\'ll figure it out', icon: 'sparkles', bg: '#ECFDF5', accent: '#10B981' },
 ];
 
 export default function LanguageSelectionScreen() {
@@ -28,8 +34,6 @@ export default function LanguageSelectionScreen() {
   const navigation = useNavigation<AuthStackNavigationProp<'LanguageSelection'>>();
 
   const handleNext = () => {
-    // Navigate to Consent screen and pass the language preference as a parameter
-    // Casting navigation to any here to pass params since we strictly aren't mutating types.ts
     (navigation.navigate as any)('Consent', { preferredLanguage: selectedLang });
   };
 
@@ -37,6 +41,14 @@ export default function LanguageSelectionScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <View style={styles.header}>
+          <LinearGradient
+            colors={['#6366F1', '#8B5CF6']}
+            style={styles.iconBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="language" size={24} color="#FFF" />
+          </LinearGradient>
           <Text style={styles.title}>Choose Language</Text>
           <Text style={styles.subtitle}>
             Aap kis zaban mein app istemal karna chahte hain?
@@ -51,33 +63,34 @@ export default function LanguageSelectionScreen() {
                 key={lang.id}
                 style={[
                   styles.card,
-                  isSelected ? styles.cardSelected : null,
+                  { backgroundColor: isSelected ? lang.bg : '#F8FAFC' },
+                  isSelected && { borderColor: lang.accent },
                 ]}
                 onPress={() => setSelectedLang(lang.id)}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.cardTitle,
-                    isSelected ? styles.textSelected : null,
-                  ]}
-                >
-                  {lang.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.cardSubtitle,
-                    isSelected ? styles.textSelected : null,
-                  ]}
-                >
-                  {lang.subtitle}
-                </Text>
+                <View style={[styles.langIcon, { backgroundColor: isSelected ? lang.accent + '22' : '#F1F5F9' }]}>
+                  <Ionicons name={lang.icon as any} size={22} color={isSelected ? lang.accent : '#94A3B8'} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, isSelected && { color: lang.accent }]}>
+                    {lang.title}
+                  </Text>
+                  <Text style={[styles.cardSubtitle, isSelected && { color: lang.accent }]}>
+                    {lang.subtitle}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <View style={[styles.checkCircle, { backgroundColor: lang.accent }]}>
+                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleNext} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.button} onPress={handleNext} activeOpacity={0.85}>
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
       </View>
@@ -99,69 +112,81 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     alignItems: 'center',
   },
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#64748B',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+    paddingHorizontal: 16,
   },
   cardsContainer: {
     marginBottom: 40,
-    gap: 16,
+    gap: 14,
   },
   card: {
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    padding: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 20,
+    padding: 18,
   },
-  cardSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  textSelected: {
-    color: '#2563EB',
-  },
-  button: {
-    height: 56,
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
+  langIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
+    marginRight: 14,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#334155',
+    marginBottom: 2,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  checkCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    height: 58,
+    backgroundColor: '#6366F1',
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

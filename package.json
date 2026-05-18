@@ -8,6 +8,8 @@
     "expo": "^55.0.24",
     "expo-constants": "~55.0.16",
     "expo-image-picker": "~55.0.20",
+    "expo-linear-gradient": "~55.0.14",
+    "expo-location": "~55.1.10",
     "expo-secure-store": "~55.0.14",
     "react": "19.2.0",
     "react-dom": "19.2.0",

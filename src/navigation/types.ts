@@ -8,6 +8,7 @@ export type AuthStackParamList = {
   LanguageSelection: undefined;
   Consent: undefined;
   HomeShell: undefined;
+  AiAssistant: undefined;
 };
 
 export type AuthStackNavigationProp<T extends keyof AuthStackParamList> = 
