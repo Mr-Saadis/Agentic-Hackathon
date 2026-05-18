@@ -1,8 +1,28 @@
 {
-  "plugins": [
-    "expo-secure-store"
-  ],
-  "android": {
-    "package": "com.anonymous.agentichackathon"
+  "expo": {
+    "name": "ServeIQ",
+    "slug": "serveiq",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6366F1"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "android": {
+      "package": "com.anonymous.agentichackathon",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6366F1"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.serveiq.app",
+      "supportsTablet": false
+    }
   }
 }

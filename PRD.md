@@ -116,7 +116,7 @@
 
 ## [cite_start]6. Functional Requirements — User Application [cite: 47, 293]
 
-### [cite_start]FR-U-01: Authentication & Onboarding [cite: 48, 294]
+### [COMPLETED] FR-U-01: Authentication & Onboarding [cite: 48, 294]
 * [cite_start]Users register via phone number[cite: 49, 295]. [cite_start]OTP verified through Supabase Auth (SMS via Twilio)[cite: 49, 295].
 * [cite_start]Profile consists of: name, preferred language (Urdu / English / Auto-detect), default location, and payment method preference[cite: 50, 296].
 * [cite_start]Consent screen: Explicit PDPA-compliant data collection consent with a checkbox[cite: 51, 297]. [cite_start]Non-consent blocks registration[cite: 51, 297].
@@ -176,12 +176,14 @@
 
 ## [cite_start]7. Functional Requirements — Technician Application [cite: 95, 341]
 
-### [cite_start]FR-T-01: Onboarding & Verification [cite: 96, 342]
-* [cite_start]Registration: Phone number (OTP), CNIC photo upload (front + back), and face selfie verification[cite: 97, 343].
-* KYC status transitions: `Pending` | `Verified` | [cite_start]`Rejected`[cite: 98, 344]. [cite_start]Only `Verified` technicians are eligible to receive job dispatches[cite: 98, 344].
-* [cite_start]Skills entry: Multi-select from service catalogue (AC, Plumbing, Electrical, etc.) with sub-skills (e.g., AC Inverter, AC Split, AC Window)[cite: 99, 345].
-* [cite_start]Base rate entry: PKR per hour or per job (configurable per skill type)[cite: 100, 346].
-* [cite_start]New technicians receive a "Verified New Talent" badge, with a Cold Start Boost active for their first 5 completed jobs[cite: 101, 347].
+### [COMPLETED] FR-T-01: Onboarding & Verification
+* Registration: Phone number (OTP), CNIC photo upload (front + back), and face selfie verification.
+* KYC status transitions: `Pending` | `Verified` | `Rejected`. Only `Verified` technicians are eligible to receive job dispatches.
+* Skills entry: Multi-select from service catalogue (AC, Plumbing, Electrical, etc.) with sub-skills (e.g., AC Inverter, AC Split, AC Window).
+* **[EXTRA FEATURE - Agentic Skill Suggester]**: Gemini AI integration in the profile screen that auto-suggests 4-6 specific, practical sub-skills dynamically based on the user's selected primary skills.
+* Base rate entry: PKR per hour or per job (configurable per skill type).
+* **[EXTRA FEATURE - Agentic Vetting]**: Gemini AI conducts a multi-lingual (English/Urdu/Roman Urdu), dynamic 3-question interview (2 MCQs & 1 Free-Text) to evaluate the technician. It auto-generates a `verified_description`, `base_rate`, and `competence_score` which are saved directly to the database.
+* New technicians receive a "Verified New Talent" badge, with a Cold Start Boost active for their first 5 completed jobs.
 
 ### [cite_start]FR-T-02: Cold Start Boost — Newbie Boost Engine [cite: 102, 348]
 * [cite_start]Eligibility: Technician has fewer than 5 successfully completed and rated jobs[cite: 103, 349].
@@ -214,7 +216,7 @@
 * [cite_start]**Proof of Execution:** Technician must upload at least one photo or short video (maximum 30 seconds) before completion is unlocked[cite: 129, 375]. [cite_start]This is mandatory — the `Complete` button remains disabled until the upload resolves successfully[cite: 130, 376].
 * [cite_start]**"Mark Completed":** Triggers invoice generation, issues a payment prompt to the user, and opens the 24-hour dispute window[cite: 131, 377].
 
-### [cite_start]FR-T-07: Gamified Performance Dashboard [cite: 132, 378]
+### [COMPLETED] FR-T-07: Gamified Performance Dashboard [cite: 132, 378]
 * [cite_start]Technician home screen displays: Reliability Score (0–100) with a 30-day change history graph [cite: 134, 379, 380][cite_start], today's/monthly earnings [cite: 135, 381][cite_start], job completion rate, average rating, and average response time[cite: 136, 382].
 
 [cite_start]**Score Delta Rules Matrix:** [cite: 137, 383]
@@ -238,6 +240,8 @@
 | Workflow | Description | Trace Required |
 | :--- | :--- | :--- |
 | **intent_extraction** [COMPLETED - PHASE 3.1] | Parse multilingual input ➔ structured JSON | [cite_start]Yes — confidence score + field mapping [cite: 143, 389] |
+| **provider_vetting** [COMPLETED - EXTRA] | Conduct multi-lingual AI interview to vet technician skills | [cite_start]Yes — interview questions and JSON evaluation [cite: 143, 389] |
+| **skill_suggestion** [COMPLETED - EXTRA] | Auto-suggest specific sub-skills during onboarding | No — generative response |
 | **provider_matching** | Score providers using 6-factor algorithm | [cite_start]Yes — per-provider score breakdown [cite: 143, 389] |
 | **dynamic_pricing** | Generate itemized quote per provider | [cite_start]Yes — each price component logged [cite: 143, 389] |
 | **scheduling_check** | Validate availability, prevent conflicts | [cite_start]Yes — conflict reason if any [cite: 143, 389] |

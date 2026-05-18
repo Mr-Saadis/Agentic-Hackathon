@@ -20,12 +20,73 @@ const { width, height } = Dimensions.get('window');
 type StatusType = 'Offline' | 'Available' | 'Busy';
 
 export default function ProviderDashboardScreen() {
-  // States
   const [status, setStatus] = useState<StatusType>('Available');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [countdown, setCountdown] = useState(180); // 3 minutes
   const [showTimeoutBanner, setShowTimeoutBanner] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  const [providerName, setProviderName] = useState('Valued Partner');
+  const [providerInitials, setProviderInitials] = useState('VP');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // First try to get name and status from providers table
+        const { data: providerData, error: fetchError } = await supabase.from('providers').select('*').eq('id', user.id).single();
+        if (fetchError) console.warn("Error fetching provider data:", fetchError);
+
+        let name = providerData?.name;
+
+        if (providerData && providerData.current_status) {
+          const dbStatus = providerData.current_status.toString();
+          const formattedStatus = dbStatus.charAt(0).toUpperCase() + dbStatus.slice(1).toLowerCase();
+          if (['Offline', 'Available', 'Busy'].includes(formattedStatus)) {
+            setStatus(formattedStatus as StatusType);
+          }
+        }
+
+        // Fallback to metadata
+        if (!name) {
+          name = user.user_metadata?.name || user.user_metadata?.full_name;
+        }
+
+        // If still not found, fallback to phone number
+        if (!name) {
+          name = user.phone || 'Provider';
+        }
+
+        setProviderName(name);
+
+        // Create initials
+        const nameParts = name.split(' ');
+        if (nameParts.length >= 2) {
+          setProviderInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
+        } else {
+          setProviderInitials(name.substring(0, 2).toUpperCase());
+        }
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const updateStatus = async (newStatus: StatusType) => {
+    setStatus(newStatus); // Optimistic UI update
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Send as lowercase to DB using current_status
+        const { error } = await supabase.from('providers').update({ current_status: newStatus.toLowerCase() }).eq('id', user.id);
+        if (error) {
+          console.warn("Failed to sync status to Supabase:", error);
+        }
+      }
+    } catch (err) {
+      console.warn("Error updating status:", err);
+    }
+  };
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -89,7 +150,7 @@ export default function ProviderDashboardScreen() {
   const handleTimeout = () => {
     setIsModalVisible(false);
     setShowTimeoutBanner(true);
-    
+
     // Show banner animation
     Animated.sequence([
       Animated.spring(bannerAnim, {
@@ -109,7 +170,7 @@ export default function ProviderDashboardScreen() {
 
   const handleAccept = () => {
     setIsModalVisible(false);
-    setStatus('Busy');
+    updateStatus('Busy');
     setShowSuccessToast(true);
 
     // Show toast animation
@@ -163,11 +224,11 @@ export default function ProviderDashboardScreen() {
         <View style={styles.headerContainer}>
           <View style={styles.headerProfile}>
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>AR</Text>
+              <Text style={styles.avatarText}>{providerInitials}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.greetingText}>Welcome back,</Text>
-              <Text style={styles.technicianName}>Ali Raza</Text>
+              <Text style={styles.technicianName}>{providerName}</Text>
             </View>
             <TouchableOpacity onPress={async () => await supabase.auth.signOut()}>
               <Ionicons name="log-out-outline" size={28} color="#94A3B8" />
@@ -182,7 +243,7 @@ export default function ProviderDashboardScreen() {
                   styles.statusPill,
                   status === 'Offline' ? styles.statusOffline : styles.statusInactive
                 ]}
-                onPress={() => setStatus('Offline')}
+                onPress={() => updateStatus('Offline')}
               >
                 <Text style={[styles.statusText, status === 'Offline' && styles.statusTextActive]}>Offline</Text>
               </TouchableOpacity>
@@ -191,7 +252,7 @@ export default function ProviderDashboardScreen() {
                   styles.statusPill,
                   status === 'Available' ? styles.statusAvailable : styles.statusInactive
                 ]}
-                onPress={() => setStatus('Available')}
+                onPress={() => updateStatus('Available')}
               >
                 <Text style={[styles.statusText, status === 'Available' && styles.statusTextActive]}>Available</Text>
               </TouchableOpacity>
@@ -200,7 +261,7 @@ export default function ProviderDashboardScreen() {
                   styles.statusPill,
                   status === 'Busy' ? styles.statusBusy : styles.statusInactive
                 ]}
-                onPress={() => setStatus('Busy')}
+                onPress={() => updateStatus('Busy')}
               >
                 <Text style={[styles.statusText, status === 'Busy' && styles.statusTextActive]}>Busy</Text>
               </TouchableOpacity>
@@ -234,7 +295,7 @@ export default function ProviderDashboardScreen() {
             </View>
             <Text style={styles.earningsValue}>Rs. 4,500</Text>
             <Text style={styles.metricFootnote}>+15% from yesterday</Text>
-            
+
             <View style={styles.earningsChartPlaceholder}>
               {/* Minimal aesthetic bar representations */}
               <View style={[styles.chartBar, { height: '40%' }]} />
@@ -257,7 +318,7 @@ export default function ProviderDashboardScreen() {
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.sheetHandle} />
-            
+
             <View style={styles.radarHeader}>
               <Animated.View style={[styles.urgentIndicator, { transform: [{ scale: pulseAnim }] }]}>
                 <View style={styles.urgentDot} />

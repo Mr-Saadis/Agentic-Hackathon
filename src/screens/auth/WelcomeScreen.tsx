@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { AuthStackNavigationProp } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
@@ -10,56 +11,83 @@ export default function WelcomeScreen() {
   const navigation = useNavigation<AuthStackNavigationProp<'Welcome'>>();
 
   const handleRoleSelection = (role: 'customer' | 'technician') => {
-    // Navigate to PhoneInput and pass the selected role
     navigation.navigate('PhoneInput', { role });
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Logo & Branding */}
         <View style={styles.header}>
+          <LinearGradient
+            colors={['#6366F1', '#8B5CF6']}
+            style={styles.logoBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="flash" size={28} color="#FFF" />
+          </LinearGradient>
           <Text style={styles.logoText}>ServeIQ</Text>
-          <Text style={styles.subtitle}>Choose your journey to get started</Text>
+          <Text style={styles.tagline}>Smart services at your fingertips</Text>
         </View>
 
+        {/* Role Selection Cards */}
         <View style={styles.cardsContainer}>
           {/* Customer Card */}
-          <TouchableOpacity 
-            style={[styles.roleCard, styles.customerCard]} 
-            activeOpacity={0.8}
+          <TouchableOpacity
+            style={styles.roleCard}
+            activeOpacity={0.85}
             onPress={() => handleRoleSelection('customer')}
           >
-            <View style={styles.iconContainerCustomer}>
-              <Ionicons name="search" size={32} color="#2563EB" />
-            </View>
-            <Text style={styles.cardTitle}>I need a service</Text>
-            <Text style={styles.cardDescription}>
-              Find trusted plumbers, electricians, AC technicians, and more in seconds.
-            </Text>
-            <View style={styles.arrowContainer}>
-              <Ionicons name="arrow-forward" size={20} color="#2563EB" />
-            </View>
+            <LinearGradient
+              colors={['#EEF2FF', '#E0E7FF']}
+              style={styles.cardGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.cardTop}>
+                <View style={[styles.iconWrap, { backgroundColor: '#6366F1' }]}>
+                  <Ionicons name="search" size={24} color="#FFF" />
+                </View>
+                <View style={styles.arrowWrap}>
+                  <Ionicons name="arrow-forward" size={18} color="#6366F1" />
+                </View>
+              </View>
+              <Text style={[styles.cardTitle, { color: '#312E81' }]}>I need a service</Text>
+              <Text style={styles.cardDesc}>
+                Find trusted plumbers, electricians & more near you in seconds.
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
 
           {/* Technician Card */}
-          <TouchableOpacity 
-            style={[styles.roleCard, styles.technicianCard]} 
-            activeOpacity={0.8}
+          <TouchableOpacity
+            style={styles.roleCard}
+            activeOpacity={0.85}
             onPress={() => handleRoleSelection('technician')}
           >
-            <View style={styles.iconContainerTechnician}>
-              <Ionicons name="briefcase" size={32} color="#10B981" />
-            </View>
-            <Text style={styles.cardTitle}>I provide services</Text>
-            <Text style={styles.cardDescription}>
-              Join as a verified technician, get steady jobs, and earn more on your own schedule.
-            </Text>
-            <View style={styles.arrowContainer}>
-              <Ionicons name="arrow-forward" size={20} color="#10B981" />
-            </View>
+            <LinearGradient
+              colors={['#ECFDF5', '#D1FAE5']}
+              style={styles.cardGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.cardTop}>
+                <View style={[styles.iconWrap, { backgroundColor: '#10B981' }]}>
+                  <Ionicons name="briefcase" size={24} color="#FFF" />
+                </View>
+                <View style={styles.arrowWrap}>
+                  <Ionicons name="arrow-forward" size={18} color="#10B981" />
+                </View>
+              </View>
+              <Text style={[styles.cardTitle, { color: '#064E3B' }]}>I provide services</Text>
+              <Text style={styles.cardDesc}>
+                Join as a verified technician, get jobs & earn on your schedule.
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>By continuing, you agree to our Terms of Service</Text>
         </View>
@@ -71,7 +99,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
@@ -83,78 +111,72 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     marginTop: Platform.OS === 'android' ? 24 : 0,
   },
+  logoBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   logoText: {
-    fontSize: 42,
+    fontSize: 38,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -1,
-    marginBottom: 12,
+    marginBottom: 6,
   },
-  subtitle: {
+  tagline: {
     fontSize: 16,
     color: '#64748B',
     fontWeight: '500',
   },
   cardsContainer: {
-    gap: 20,
+    gap: 18,
   },
   roleCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 24,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 4,
-    borderWidth: 1,
   },
-  customerCard: {
-    shadowColor: '#2563EB',
-    borderColor: '#EFF6FF',
+  cardGradient: {
+    padding: 24,
+    borderRadius: 24,
   },
-  technicianCard: {
-    shadowColor: '#10B981',
-    borderColor: '#ECFDF5',
-  },
-  iconContainerCustomer: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  iconContainerTechnician: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#ECFDF5',
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  arrowWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  cardDescription: {
-    fontSize: 15,
+  cardDesc: {
+    fontSize: 14,
     color: '#475569',
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  arrowContainer: {
-    alignSelf: 'flex-end',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
+    lineHeight: 21,
   },
   footer: {
     position: 'absolute',

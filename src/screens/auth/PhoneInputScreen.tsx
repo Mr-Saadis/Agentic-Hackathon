@@ -12,6 +12,8 @@ import {
   Keyboard,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import type { AuthStackNavigationProp } from '../../navigation/types';
 
@@ -23,28 +25,15 @@ export default function PhoneInputScreen() {
   const navigation = useNavigation<AuthStackNavigationProp<'PhoneInput'>>();
   const route = useRoute<any>();
   const role = route.params?.role || 'customer';
-  const handlePhoneChange = (text: string) => {
-    // Clear any previous error message when the user types
-    setErrorMessage('');
-    
-    // Strip out all non-digit characters
-    let cleaned = text.replace(/\D/g, '');
-    
-    // Auto-format: if the user types a leading 0 (e.g., '0300...'), strip it out
-    // because the +92 prefix implies we don't need the local zero.
-    if (cleaned.startsWith('0')) {
-      cleaned = cleaned.substring(1);
-    }
-    
-    // Pakistani mobile numbers have exactly 10 digits after the 0
-    if (cleaned.length > 10) {
-      cleaned = cleaned.substring(0, 10);
-    }
 
+  const handlePhoneChange = (text: string) => {
+    setErrorMessage('');
+    let cleaned = text.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (cleaned.length > 10) cleaned = cleaned.substring(0, 10);
     setPhoneNumber(cleaned);
   };
 
-  // Dynamically format the display. E.g., '3001234567' -> '300 1234567'
   const formatDisplayNumber = (number: string) => {
     if (number.length === 0) return '';
     if (number.length <= 3) return number;
@@ -56,31 +45,16 @@ export default function PhoneInputScreen() {
       setErrorMessage('Please enter a valid 10-digit mobile number.');
       return;
     }
-
     Keyboard.dismiss();
     setIsLoading(true);
     setErrorMessage('');
-
-    // E.164 compliant phone number format for Supabase Auth
     const formattedE164Phone = `+92${phoneNumber}`;
-
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedE164Phone,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      // Automatically navigate to OTP verification, passing the phone and role as parameters
+      const { error } = await supabase.auth.signInWithOtp({ phone: formattedE164Phone });
+      if (error) throw error;
       navigation.navigate('OTPVerification', { phone: formattedE164Phone, role });
     } catch (error: any) {
-      let message = 'An network or unexpected error occurred. Please try again.';
-      if (error.message) {
-        message = error.message;
-      }
-      setErrorMessage(message);
+      setErrorMessage(error.message || 'An network or unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -93,10 +67,23 @@ export default function PhoneInputScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.innerContainer}>
+          {/* Back Button */}
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color="#0F172A" />
+          </TouchableOpacity>
+
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>Welcome to ServeIQ</Text>
+            <LinearGradient
+              colors={['#6366F1', '#8B5CF6']}
+              style={styles.iconBadge}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="call" size={24} color="#FFF" />
+            </LinearGradient>
+            <Text style={styles.title}>Enter your number</Text>
             <Text style={styles.subtitle}>
-              Enter your mobile number to log in or register.
+              We'll send a verification code to log you in securely.
             </Text>
           </View>
 
@@ -107,34 +94,26 @@ export default function PhoneInputScreen() {
                 errorMessage ? styles.inputWrapperError : null,
               ]}
             >
-              {/* Prefix Indicator */}
               <View style={styles.prefixContainer}>
                 <Text style={styles.flagIcon}>🇵🇰</Text>
                 <Text style={styles.prefixText}>+92</Text>
               </View>
-              
-              {/* Phone Input Field */}
               <TextInput
                 style={styles.textInput}
                 placeholder="300 1234567"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#94A3B8"
                 keyboardType="phone-pad"
                 value={formatDisplayNumber(phoneNumber)}
                 onChangeText={handlePhoneChange}
-                maxLength={11} // "300 1234567" is 11 chars
+                maxLength={11}
                 editable={!isLoading}
                 returnKeyType="done"
                 onSubmitEditing={handleSendOTP}
               />
             </View>
-            
-            {/* Error Message Display */}
-            {errorMessage ? (
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            ) : null}
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
           </View>
 
-          {/* Action Button */}
           <TouchableOpacity
             style={[
               styles.button,
@@ -142,7 +121,7 @@ export default function PhoneInputScreen() {
             ]}
             onPress={handleSendOTP}
             disabled={isLoading || phoneNumber.length !== 10}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -166,19 +145,42 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
+  backBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 48 : 16,
+    left: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   headerContainer: {
+    alignItems: 'center',
     marginBottom: 40,
   },
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 24,
+    fontSize: 15,
+    color: '#64748B',
+    lineHeight: 22,
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
   inputSection: {
     marginBottom: 32,
@@ -187,10 +189,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    height: 56,
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
+    backgroundColor: '#F8FAFC',
+    height: 60,
     paddingHorizontal: 16,
   },
   inputWrapperError: {
@@ -202,51 +204,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    borderRightColor: '#E2E8F0',
     paddingRight: 12,
   },
   flagIcon: {
     fontSize: 20,
-    marginRight: 4,
+    marginRight: 6,
   },
   prefixText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#334155',
   },
   textInput: {
     flex: 1,
     fontSize: 18,
-    color: '#111827',
-    fontWeight: '500',
+    color: '#0F172A',
+    fontWeight: '600',
     height: '100%',
+    letterSpacing: 1,
   },
   errorText: {
     color: '#EF4444',
-    fontSize: 14,
-    marginTop: 8,
-    fontWeight: '500',
+    fontSize: 13,
+    marginTop: 10,
+    fontWeight: '600',
   },
   button: {
-    height: 56,
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
+    height: 58,
+    backgroundColor: '#6366F1',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: '#CBD5E1',
     shadowOpacity: 0,
     elevation: 0,
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

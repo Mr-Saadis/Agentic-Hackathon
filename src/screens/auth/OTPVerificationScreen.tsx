@@ -12,6 +12,8 @@ import {
   Keyboard,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../../lib/supabase';
 import type { AuthStackNavigationProp, AuthStackRouteProp } from '../../navigation/types';
@@ -25,69 +27,40 @@ export default function OTPVerificationScreen() {
   const [timer, setTimer] = useState<number>(60);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
-
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  // Timer logic for Resend OTP
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    return () => { if (interval) clearInterval(interval); };
   }, [timer]);
 
-  // Auto-submit when all 6 digits are filled
   useEffect(() => {
     const otpString = otp.join('');
-    if (otpString.length === 6 && !isLoading) {
-      verifyOTP(otpString);
-    }
+    if (otpString.length === 6 && !isLoading) verifyOTP(otpString);
   }, [otp]);
 
   const verifyOTP = async (token: string) => {
     Keyboard.dismiss();
     setIsLoading(true);
     setErrorMessage('');
-
     try {
-      // 1. Save Role to SecureStore FIRST so App.tsx reads it correctly
       await SecureStore.setItemAsync('user_role', role || 'customer');
-
-      // 2. Verify OTP with Supabase Auth
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: token,
-        type: 'sms',
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      // 3. Database Insertion for Customers
+      const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+      if (error) throw error;
       if (data.session?.user && role !== 'technician') {
-        // Ensure user record exists in 'users' table
         await supabase.from('users').upsert({
           id: data.session.user.id,
           phone: data.session.user.phone,
-          pdpa_consent: true, // Assuming consent given in previous screen
         }, { onConflict: 'id' });
       }
-
-      // Once verified, Supabase session updates and triggers App.tsx to switch stacks automatically.
     } catch (error: any) {
       console.error('OTP Verification Error:', error);
       setErrorMessage('Galat code — dobara try karein / Invalid code — try again');
-      // Clear OTP input on error
       setOtp(['', '', '', '', '', '']);
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } finally {
       setIsLoading(false);
     }
@@ -95,27 +68,17 @@ export default function OTPVerificationScreen() {
 
   const handleResendOTP = async () => {
     if (timer > 0) return;
-
     Keyboard.dismiss();
     setIsLoading(true);
     setErrorMessage('');
-
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-      });
-
-      if (error) {
-        throw error;
-      }
-
+      const { error } = await supabase.auth.signInWithOtp({ phone });
+      if (error) throw error;
       setTimer(60);
       setOtp(['', '', '', '', '', '']);
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (error: any) {
-      setErrorMessage(error.message || 'An error occurred while resending the code.');
+      setErrorMessage(error.message || 'An error occurred while resending.');
     } finally {
       setIsLoading(false);
     }
@@ -123,36 +86,20 @@ export default function OTPVerificationScreen() {
 
   const handleOtpChange = (text: string, index: number) => {
     const newOtp = [...otp];
-
-    // Handle pasting a full code
     if (text.length > 1) {
       const pastedCode = text.replace(/\D/g, '').split('').slice(0, 6);
-      pastedCode.forEach((char, i) => {
-        if (index + i < 6) {
-          newOtp[index + i] = char;
-        }
-      });
+      pastedCode.forEach((char, i) => { if (index + i < 6) newOtp[index + i] = char; });
       setOtp(newOtp);
-
-      // Focus the last filled box or next empty box
-      const nextFocusIndex = Math.min(index + pastedCode.length, 5);
-      inputRefs.current[nextFocusIndex]?.focus();
+      inputRefs.current[Math.min(index + pastedCode.length, 5)]?.focus();
       return;
     }
-
-    // Normal digit entry
     const cleanedText = text.replace(/\D/g, '');
     newOtp[index] = cleanedText;
     setOtp(newOtp);
-
-    // Auto-advance focus
-    if (cleanedText !== '' && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (cleanedText !== '' && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Backspace on empty box reverts focus to previous box
     if (e.nativeEvent.key === 'Backspace' && otp[index] === '' && index > 0) {
       inputRefs.current[index - 1]?.focus();
       const newOtp = [...otp];
@@ -168,10 +115,22 @@ export default function OTPVerificationScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.innerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color="#0F172A" />
+          </TouchableOpacity>
+
           <View style={styles.headerContainer}>
+            <LinearGradient
+              colors={['#6366F1', '#8B5CF6']}
+              style={styles.iconBadge}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="shield-checkmark" size={24} color="#FFF" />
+            </LinearGradient>
             <Text style={styles.title}>Verify Your Number</Text>
             <Text style={styles.subtitle}>
-              Code successfully sent to <Text style={styles.phoneHighlight}>{phone}</Text>
+              Code sent to <Text style={styles.phoneHighlight}>{phone}</Text>
             </Text>
           </View>
 
@@ -189,20 +148,18 @@ export default function OTPVerificationScreen() {
                 onChangeText={(text) => handleOtpChange(text, index)}
                 onKeyPress={(e) => handleKeyPress(e, index)}
                 keyboardType="number-pad"
-                maxLength={6} // Allow pasting up to 6 characters
+                maxLength={6}
                 editable={!isLoading}
                 selectTextOnFocus
               />
             ))}
           </View>
 
-          {errorMessage ? (
-            <Text style={styles.errorText}>{errorMessage}</Text>
-          ) : null}
-
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          
           {isLoading && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2563EB" />
+              <ActivityIndicator size="large" color="#6366F1" />
               <Text style={styles.loadingText}>Verifying code...</Text>
             </View>
           )}
@@ -214,13 +171,8 @@ export default function OTPVerificationScreen() {
               disabled={timer > 0 || isLoading}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.resendText,
-                  timer > 0 ? styles.resendTextDisabled : null,
-                ]}
-              >
-                {timer > 0 ? `Resend OTP (${timer}s)` : 'Resend OTP'}
+              <Text style={[styles.resendText, timer > 0 ? styles.resendTextDisabled : null]}>
+                {timer > 0 ? `Resend (${timer}s)` : 'Resend OTP'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -241,47 +193,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  backBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 48 : 16,
+    left: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   headerContainer: {
     marginBottom: 40,
     width: '100%',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 24,
+    fontSize: 15,
+    color: '#64748B',
+    lineHeight: 22,
+    textAlign: 'center',
   },
   phoneHighlight: {
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
+    color: '#6366F1',
   },
   otpContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: '100%',
     marginBottom: 24,
+    gap: 10,
   },
   otpInput: {
-    width: 48,
-    height: 56,
+    width: 50,
+    height: 60,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    color: '#111827',
+    color: '#0F172A',
   },
   otpInputFilled: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    borderColor: '#6366F1',
+    backgroundColor: '#EEF2FF',
   },
   otpInputError: {
     borderColor: '#EF4444',
@@ -289,8 +263,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#EF4444',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -301,7 +275,8 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     fontSize: 14,
-    color: '#4B5563',
+    color: '#64748B',
+    fontWeight: '500',
   },
   resendContainer: {
     flexDirection: 'row',
@@ -309,15 +284,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   resendPrompt: {
-    fontSize: 15,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#64748B',
   },
   resendText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6366F1',
   },
   resendTextDisabled: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
 });
