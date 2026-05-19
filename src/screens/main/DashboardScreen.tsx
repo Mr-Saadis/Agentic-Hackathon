@@ -181,7 +181,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               key={s.id}
               style={[styles.serviceCard, { backgroundColor: s.bg }]}
-              onPress={() => navigation.navigate('AiAssistant')}
+              onPress={() => navigation.navigate('AiAssistant', { serviceType: s.name })}
               activeOpacity={0.8}
             >
               <View style={[styles.serviceIconCircle, { backgroundColor: s.accent + '22' }]}>

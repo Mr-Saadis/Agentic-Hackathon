@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,25 +12,20 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 
-const SYSTEM_PROMPT = `You are ServeIQ's intent extraction agent. Process English/Urdu/Roman Urdu inputs. User location: "G-11 Markaz, Islamabad".
+const getDynamicSystemPrompt = (activeService: string) => `You are the First-Touch Diagnostic Agent for ServeIQ. Act as an expert ${activeService} in Pakistan. Greet the user with Assalam o Alaikum, ask 1 or 2 troubleshooting questions strictly related to ${activeService} using polite Roman Urdu and English. Do not solve the problem, just diagnose to find the best technician.
 
-EXTRACT: service_type, location_parsed, urgency(standard|urgent), preferred_time, budget_sensitivity(High|Medium|Low), complexity(basic|intermediate|complex).
-
-PHASES (follow in order):
-1. Troubleshooting (max 2 Qs): Ask what's wrong, give DIY tip.
-2. Offer Technician: Ask if they want an expert sent.
-3. Location: Confirm live location or get alternate address.
-4. Remaining: Ask for time preference, budget naturally. One field at a time.
-
-RULES: Set needs_clarification:true until ALL fields extracted and all phases complete. Ask in Roman Urdu. Provide 2-4 quick_replies chips.
+If the activeService is "More" or "General", ask the user what exact service they need. When the user replies (e.g., "Fridge theek karwana hai"), you MUST update "detected_specific_service" to a standardized category name (e.g., "Fridge Repair") and set "ai_reply" to your diagnostic question. If the activeService is already a specific category, leave "detected_specific_service" as null.
 
 OUTPUT (strict JSON only):
-{"confidence_score":number,"needs_clarification":boolean,"missing_field":"string|null","question":"string|null","quick_replies":["strings"],"extracted_data":{"service_type":null,"location_parsed":null,"urgency":null,"preferred_time":null,"budget_sensitivity":null,"complexity":null}}`;
+{
+  "ai_reply": "string",
+  "detected_specific_service": "string or null"
+}`;
 
 interface Message {
   id: string;
@@ -42,10 +37,13 @@ interface Message {
 
 export default function AiAssistantScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const [activeService, setActiveService] = useState(route.params?.serviceType || 'General');
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome_1',
-      text: 'Assalam-o-Alaikum! 👋 Main ServeIQ AI hoon. Apna masla batayein, main madad karunga!',
+      text: `Assalam-o-Alaikum! 👋 Main ServeIQ AI hoon. ${activeService !== 'General' && activeService !== 'More' ? `Aap ko ${activeService} ka kya masla aa raha hai?` : 'Apna masla batayein, main madad karunga!'}`,
       sender: 'ai',
       type: 'text',
     },
@@ -82,7 +80,7 @@ export default function AiAssistantScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          system_instruction: { parts: [{ text: getDynamicSystemPrompt(activeService) }] },
           contents,
           generationConfig: { temperature: 0.1, topK: 40, topP: 0.95, maxOutputTokens: 512 }
         })
@@ -101,26 +99,18 @@ export default function AiAssistantScreen() {
         else if (cleanText.startsWith('```')) cleanText = cleanText.replace(/```/g, '').trim();
 
         const aiOutput = JSON.parse(cleanText);
-        let aiReply: Message;
-
-        if (aiOutput.needs_clarification) {
-          aiReply = {
-            id: (Date.now() + 1).toString(),
-            text: aiOutput.question || 'Mujhe mazeed maloomat chahiye.',
-            sender: 'ai',
-            type: aiOutput.quick_replies?.length > 0 ? 'chips' : 'text',
-            chips: aiOutput.quick_replies || [],
-          };
-        } else {
-          const { service_type, location_parsed, urgency } = aiOutput.extracted_data;
-          const urgencyText = urgency === 'urgent' ? ' (URGENT) ' : ' ';
-          aiReply = {
-            id: (Date.now() + 1).toString(),
-            text: `✅ Perfect! Finding the best ${service_type || 'expert'}${urgencyText}near ${location_parsed || 'your area'}...\n(Confidence: ${Math.round(aiOutput.confidence_score * 100)}%)`,
-            sender: 'ai',
-            type: 'text',
-          };
+        
+        if (aiOutput.detected_specific_service) {
+          setActiveService(aiOutput.detected_specific_service);
         }
+
+        const aiReply: Message = {
+          id: (Date.now() + 1).toString(),
+          text: aiOutput.ai_reply || 'Mujhe samajh nahi aayi, kya aap wazahat kar sakte hain?',
+          sender: 'ai',
+          type: 'text',
+        };
+        
         setMessages((prev) => [...prev, aiReply]);
       } else {
         throw new Error("No response from AI");
@@ -189,7 +179,7 @@ export default function AiAssistantScreen() {
               <Ionicons name="sparkles" size={16} color="#FFF" />
             </LinearGradient>
             <View>
-              <Text style={styles.headerTitle}>ServeIQ AI</Text>
+              <Text style={styles.headerTitle}>{activeService !== 'General' && activeService !== 'More' ? `${activeService} Service` : 'ServeIQ AI'}</Text>
               <Text style={styles.headerSubtitle}>Smart Diagnostic Agent</Text>
             </View>
           </View>
@@ -226,7 +216,7 @@ export default function AiAssistantScreen() {
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.textInput}
-              placeholder="Apna masla likhein..."
+              placeholder={`Describe your ${activeService !== 'General' && activeService !== 'More' ? activeService : 'service'} issue...`}
               placeholderTextColor="#94A3B8"
               value={inputText}
               onChangeText={setInputText}
