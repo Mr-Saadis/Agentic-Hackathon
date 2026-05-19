@@ -17,14 +17,45 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 
-const getDynamicSystemPrompt = (activeService: string) => `You are the First-Touch Diagnostic Agent for ServeIQ. Act as an expert ${activeService} in Pakistan. Greet the user with Assalam o Alaikum, ask 1 or 2 troubleshooting questions strictly related to ${activeService} using polite Roman Urdu and English. Do not solve the problem, just diagnose to find the best technician.
+const getDynamicSystemPrompt = (activeService: string) => `You are the First-Touch Diagnostic Agent for ServeIQ. Act as an expert ${activeService} in Pakistan. 
 
-If the activeService is "More" or "General", ask the user what exact service they need. When the user replies (e.g., "Fridge theek karwana hai"), you MUST update "detected_specific_service" to a standardized category name (e.g., "Fridge Repair") and set "ai_reply" to your diagnostic question. If the activeService is already a specific category, leave "detected_specific_service" as null.
+CONVERSATION PHASES (You MUST progress through these strictly in order based on user's input):
 
-OUTPUT (strict JSON only):
+1. Phase "diagnosing": 
+   - Ask exactly 1 or 2 technical troubleshooting questions about their ${activeService} issue. (Use Roman Urdu and English).
+   - If the user gives a vague answer (e.g., "Idea nai", "Nai pata"), DO NOT repeat the question. Immediately transition to phase "booking_intent".
+
+2. Phase "booking_intent":
+   - Briefly summarize the likely issue as an expert technician.
+   - Ask: "Kya aap isay theek karwane ke liye technician book karna chahte hain?"
+   - Set "suggested_chips": ["Jee haan", "Nahi, shukriya"]
+   - If user says no, transition to "completed" and say goodbye. If yes, transition to "location".
+
+3. Phase "location":
+   - Ask: "Kya main aapki current saved location par technician bhejoon ya kisi nayi location par?"
+   - Set "suggested_chips": ["Saved Location", "New Location"]
+   - Once user answers, acknowledge it and transition to "scheduling".
+
+4. Phase "scheduling":
+   - Ask: "Aap ke liye kaunsa waqt behtar rahega?"
+   - Set "suggested_chips": ["Aaj shaam 4 baje", "Kal subah 10 baje", "Kal shaam 5 baje"] (use realistic times).
+   - Once user selects a time, transition to "completed".
+
+5. Phase "completed":
+   - Say: "Shukriya! Aap ki booking confirm ho gayi hai. Humara technician jald aap se raabta karega."
+   - Do not ask any more questions.
+
+RULES:
+- "suggested_chips" must be an array of strings for clickable options. Leave empty [] if not applicable.
+- If activeService is "More" or "General", ask what exact service they need and update "detected_specific_service" to the specific category name (e.g., "Fridge Repair"). Otherwise, leave it null.
+- Output strictly JSON on every turn.
+
+OUTPUT FORMAT (STRICT JSON ONLY):
 {
-  "ai_reply": "string",
-  "detected_specific_service": "string or null"
+  "ai_reply": "your conversational response",
+  "detected_specific_service": "string or null",
+  "chat_phase": "diagnosing | booking_intent | location | scheduling | completed",
+  "suggested_chips": ["option 1", "option 2"]
 }`;
 
 interface Message {
@@ -75,11 +106,7 @@ export default function AiAssistantScreen() {
         parts: [{ text: msg.text }]
       }));
 
-      const apiKeys = [
-        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
-      ];
-      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+      const selectedKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY_2;
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
         method: 'POST',
@@ -87,7 +114,7 @@ export default function AiAssistantScreen() {
         body: JSON.stringify({
           system_instruction: { parts: [{ text: getDynamicSystemPrompt(activeService) }] },
           contents,
-          generationConfig: { temperature: 0.1, topK: 40, topP: 0.95, maxOutputTokens: 512 }
+          generationConfig: { temperature: 0.1, topK: 40, topP: 0.95, maxOutputTokens: 512, responseMimeType: "application/json" }
         })
       });
 
@@ -113,7 +140,8 @@ export default function AiAssistantScreen() {
           id: (Date.now() + 1).toString(),
           text: aiOutput.ai_reply || 'Mujhe samajh nahi aayi, kya aap wazahat kar sakte hain?',
           sender: 'ai',
-          type: 'text',
+          type: aiOutput.suggested_chips && aiOutput.suggested_chips.length > 0 ? 'chips' : 'text',
+          chips: aiOutput.suggested_chips || [],
         };
         
         setMessages((prev) => [...prev, aiReply]);

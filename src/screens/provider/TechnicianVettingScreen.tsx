@@ -74,11 +74,7 @@ Instructions:
 
   const callGemini = async (currentHistory: Message[], lang: string) => {
     try {
-      const apiKeys = [
-        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
-      ];
-      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+      const selectedKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY_2;
 
       // Build conversation history - send raw JSON for model turns so Gemini keeps context
       const contents = [

@@ -43,11 +43,7 @@ export default function CNICUploadScreen() {
     if (!frontImage || !backImage) { alert('Please upload both sides.'); return; }
     setIsVerifying(true);
     try {
-      const apiKeys = [
-        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
-      ];
-      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+      const selectedKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY_2;
 
       const prompt = `You are a strict KYC Compliance Officer for ServeIQ in Pakistan.
         Analyze this image which claims to be a CNIC (Pakistani ID Card).

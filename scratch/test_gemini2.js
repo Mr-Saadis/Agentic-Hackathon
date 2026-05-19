@@ -1,4 +1,4 @@
-const apiKey1 = "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk";
+const apiKey1 = "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UHGk";
 
 async function testModel(modelName, key) {
   try {

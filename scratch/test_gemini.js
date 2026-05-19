@@ -1,5 +1,5 @@
-const apiKey1 = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"; // Fallback to provided key for testing
-const apiKey2 = "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk";
+const apiKey1 = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyAZ6s2NvggamOHs_e-ioAblkd7UH8Gk"; // Fallback to provided key for testing
+const apiKey2 = "AIzaSyAZ6s2NvgglX3amOHs_e-blkd7UH8Gk";
 
 async function testModel(modelName, key) {
   try {
