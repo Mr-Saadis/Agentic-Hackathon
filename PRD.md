@@ -121,7 +121,7 @@
 * [cite_start]Profile consists of: name, preferred language (Urdu / English / Auto-detect), default location, and payment method preference[cite: 50, 296].
 * [cite_start]Consent screen: Explicit PDPA-compliant data collection consent with a checkbox[cite: 51, 297]. [cite_start]Non-consent blocks registration[cite: 51, 297].
 
-### [COMPLETED - PHASE 3.1] [cite_start]FR-U-02: Multilingual Voice & Text Input [cite: 52, 298]
+### [ PHASE 3.1] [cite_start]FR-U-02: Multilingual Voice & Text Input [cite: 52, 298]
 * Voice input: User taps microphone; [cite_start]`expo-av` records in M4A format, which is uploaded to the Whisper API for transcription[cite: 53, 299].
 * [cite_start]Text input: Raw text accepted in Urdu, Roman Urdu, English, or mixed code-switched language[cite: 54, 300].
 * [cite_start]Language detection: Whisper returns detected language; if confidence < 0.80, system defaults to Urdu prompts[cite: 55, 301].

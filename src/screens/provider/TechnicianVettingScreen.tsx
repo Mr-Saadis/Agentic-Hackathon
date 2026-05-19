@@ -25,6 +25,7 @@ interface Message {
   role: 'user' | 'assistant';
   options?: string[];
   type?: 'mcq' | 'text';
+  rawJson?: string; // Store the full AI JSON response to send back to Gemini
 }
 
 export default function TechnicianVettingScreen() {
@@ -74,11 +75,12 @@ Instructions:
   const callGemini = async (currentHistory: Message[], lang: string) => {
     try {
       const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      // Build conversation history - send raw JSON for model turns so Gemini keeps context
       const contents = [
         { role: 'user', parts: [{ text: 'Start the interview. Ask the first question.' }] },
         ...currentHistory.map(msg => ({
           role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
+          parts: [{ text: msg.role === 'assistant' && msg.rawJson ? msg.rawJson : msg.text }]
         }))
       ];
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -137,7 +139,13 @@ Instructions:
         }
       }
 
-      if (parsed.status === 'complete' || parsed.competence_score !== undefined) {
+      // Check for completion - handle various possible shapes from Gemini
+      const isComplete = parsed.status === 'complete' || 
+        (parsed.competence_score !== undefined && !parsed.question) ||
+        (parsed.assigned_level !== undefined && parsed.competence_score !== undefined);
+
+      if (isComplete) {
+        console.log('[Vetting] Interview complete, result:', JSON.stringify(parsed));
         setEvaluationResult(parsed);
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -154,10 +162,20 @@ Instructions:
         await SecureStore.setItemAsync('provider_kyc_completed', 'true');
         DeviceEventEmitter.emit('provider_kyc_completed');
         setInterviewComplete(true);
-      } else {
+      } else if (parsed.question) {
+        // Normal question response - store rawJson for context
         setMessages(prev => [...prev, {
-          id: Date.now().toString(), text: parsed.question || textResponse,
-          role: 'assistant', options: parsed.options, type: parsed.type
+          id: Date.now().toString(), text: parsed.question,
+          role: 'assistant', options: parsed.options, type: parsed.type,
+          rawJson: textResponse,
+        }]);
+      } else {
+        // Fallback: if no question and no completion, show raw text as message
+        console.warn('[Vetting] Unexpected AI response:', textResponse);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(), text: textResponse,
+          role: 'assistant', type: 'text',
+          rawJson: textResponse,
         }]);
       }
     } catch (err: any) {
