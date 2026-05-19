@@ -50,8 +50,13 @@ export default function TechnicianProfileScreen() {
       const prompt = `The user has selected these broad skills: ${selectedSkills.join(', ')}. Recommend 4 to 6 specific, practical sub-skills, tool names, or appliance types they might also know to make their profile look expert. 
 CRITICAL: Return ONLY a valid JSON array of strings. Do not include any introductory text, markdown formatting, or anything else. Example: ["Pipe Fitting", "Inverter ACs"]`;
 
-      const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const apiKeys = [
+        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
+      ];
+      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

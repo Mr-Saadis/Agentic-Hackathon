@@ -74,7 +74,12 @@ Instructions:
 
   const callGemini = async (currentHistory: Message[], lang: string) => {
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      const apiKeys = [
+        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
+      ];
+      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
       // Build conversation history - send raw JSON for model turns so Gemini keeps context
       const contents = [
         { role: 'user', parts: [{ text: 'Start the interview. Ask the first question.' }] },
@@ -83,7 +88,7 @@ Instructions:
           parts: [{ text: msg.role === 'assistant' && msg.rawJson ? msg.rawJson : msg.text }]
         }))
       ];
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

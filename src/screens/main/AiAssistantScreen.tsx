@@ -77,8 +77,13 @@ export default function AiAssistantScreen() {
         parts: [{ text: msg.text }]
       }));
 
-      const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const apiKeys = [
+        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
+      ];
+      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
