@@ -43,13 +43,18 @@ export default function CNICUploadScreen() {
     if (!frontImage || !backImage) { alert('Please upload both sides.'); return; }
     setIsVerifying(true);
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      const apiKeys = [
+        process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+        "AIzaSyAZ6s2NvgglX3amOHs_e-ioAblkd7UH8Gk"
+      ];
+      const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
       const prompt = `You are a strict KYC Compliance Officer for ServeIQ in Pakistan.
         Analyze this image which claims to be a CNIC (Pakistani ID Card).
         Task: 1. Verify if it looks like a valid Pakistani CNIC. 2. Extract the 13-digit CNIC number if visible.
         Output MUST be strict JSON: { "is_valid_cnic": boolean, "cnic_number": "XXXXX-XXXXXXX-X" | null, "reason": "brief reason" }`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
